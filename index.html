@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deye V(W) &amp; V(Q) Configurator</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Fira+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              page: "#eef2f8",
+              card: "#ffffff",
+              ocean: "#005f8e",
+              "ocean-deep": "#004269",
+              "ocean-light": "#e8f4fc",
+              cyan: "#0891b2",
+              "cyan-light": "#ecfbff",
+              amber: "#d97706",
+              "amber-light": "#fef3e2",
+              coral: "#e03e3e",
+              "coral-light": "#fef2f2",
+              emerald: "#059669",
+              "emerald-light": "#edfbf4",
+              ink: "#0d1b2a",
+              "ink-soft": "#4a6480",
+              "ink-dim": "#8ca3b8",
+              border: "#dde5ef",
+              "border-dark": "#c3d0de",
+            },
+            fontFamily: {
+              sans: ["Sora", "sans-serif"],
+              mono: ['"Fira Mono"', "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="./src/styles/index.css" />
+  </head>
+
+  <body class="font-sans text-ink p-4 md:p-6 lg:p-8">
+    <div class="max-w-[1360px] mx-auto flex flex-col gap-6">
+      <!-- ── HEADER ── -->
+      <header class="fade-up flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-ink leading-tight">
+            Криві <span class="text-ocean">V(W)</span> та <span class="text-cyan">V(Q)</span>
+          </h1>
+          <p class="text-ink-soft text-sm mt-1.5">
+            Volt-Watt &amp; Volt-VAr · Конфігуратор порогів напруги мережі
+          </p>
+        </div>
+      </header>
+
+      <!-- ── HERO + CONTROLS ── -->
+      <div class="fade-up-2 grid grid-cols-1 lg:grid-cols-[1.3fr_0.9fr] gap-5">
+        <!-- Hero -->
+        <div class="card p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-1.5 h-1.5 rounded-full bg-ocean"></div>
+            <span class="text-xs font-semibold text-ocean tracking-widest uppercase font-mono"
+              >Короткий опис</span
+            >
+          </div>
+          <p class="text-sm text-ink-soft leading-relaxed mb-5">
+            Підбір кривих для уникнення зростання напруги мережі вище заданого порогу. Сторінка
+            допомагає швидко розрахувати точки V1–V4 під ваш INV Output Voltage, щоб інвертор
+            починав зменшувати активну потужність і коригувати реактивну при зростанні напруги.
+          </p>
+
+          <ol class="flex flex-col gap-2.5 mb-5">
+            <li class="flex items-start text-sm text-ink-soft">
+              <span class="step-num">1</span>Оберіть INV Output Voltage (220 / 230 / 240 В).
+            </li>
+            <li class="flex items-start text-sm text-ink-soft">
+              <span class="step-num">2</span>Вкажіть «Початок обмеження» та «Кінець обмеження».
+            </li>
+            <li class="flex items-start text-sm text-ink-soft">
+              <span class="step-num">3</span>Натисніть «Перерахувати криві під поріг».
+            </li>
+            <li class="flex items-start text-sm text-ink-soft">
+              <span class="step-num">4</span>За потреби підкоригуйте точки на схемі вручну.
+            </li>
+          </ol>
+        </div>
+
+        <!-- Controls -->
+        <div class="card p-6 flex flex-col">
+          <h2 class="text-base font-bold text-ink mb-5 flex items-center gap-2">
+            <svg
+              class="w-4 h-4 text-ocean"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+              />
+            </svg>
+            Пороги напруги
+          </h2>
+
+          <!-- Початок -->
+          <div class="mb-5">
+            <label
+              class="block text-xs font-semibold text-ink-soft uppercase tracking-widest mb-2 font-mono"
+              for="limitStart"
+            >
+              Початок обмеження потужності
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                id="limitStart"
+                class="volt-input"
+                type="number"
+                step="1"
+                min="200"
+                max="260"
+                value="242"
+              />
+              <span class="text-ink-dim text-sm font-mono font-semibold">В</span>
+            </div>
+            <p class="text-xs text-ink-dim mt-1.5">
+              Використовується як V1 для V(W) і V3 для V(Q).
+            </p>
+          </div>
+
+          <!-- Кінець обмеження -->
+          <div class="mb-4">
+            <label
+              class="block text-xs font-semibold text-ink-soft uppercase tracking-widest mb-2 font-mono"
+              for="limitVoltage"
+            >
+              Кінець обмеження потужності
+            </label>
+            <div class="flex items-center gap-3">
+              <input
+                id="limitVoltage"
+                class="volt-input"
+                type="number"
+                step="1"
+                min="200"
+                max="260"
+                value="250"
+              />
+              <span class="text-ink-dim text-sm font-mono font-semibold">В</span>
+            </div>
+            <p class="text-xs text-ink-dim mt-1.5">Використовується як V4 для V(W) та V(Q).</p>
+          </div>
+
+          <div
+            id="limitWarning"
+            class="warning-box hidden"
+            role="alert"
+            aria-live="assertive"
+          ></div>
+          <div class="flex-1"></div>
+
+          <!-- Actions -->
+          <div class="h-divider"></div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" id="applyPresetBtn" class="preset-button">
+              ↻ Перерахувати криві
+            </button>
+            <button type="button" id="resetProfileBtn" class="secondary-button">Скинути</button>
+          </div>
+          <div class="mt-3">
+            <span id="calcMode" class="mode-chip auto">РЕЖИМ: АВТО</span>
+            <span id="applyStatus" class="apply-status" role="status" aria-live="polite"
+              >Криві не застосовано</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANELS ── -->
+      <div class="fade-up-4 panels-container">
+        <!-- Grid Setting image -->
+        <div class="grid-settings">
+          <div class="card overflow-visible p-0">
+            <div class="window-bar">
+              <div class="window-dot bg-coral/70"></div>
+              <div class="window-dot bg-amber/70"></div>
+              <div class="window-dot bg-emerald/70"></div>
+              <span class="text-xs font-mono text-ink-dim ml-1">Вибір номінальної напруги</span>
+            </div>
+            <div class="relative">
+              <img
+                id="imgGridSettings"
+                src="grid_settings.png"
+                alt="Grid Settings"
+                class="block max-w-full h-auto"
+                style="border-radius: 0 0 14px 14px"
+              />
+              <select id="vNom" class="grid-settings-input vnom-select">
+                <option value="220">220 V</option>
+                <option value="230" selected>230 V</option>
+                <option value="240">240 V</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- VW VQ image -->
+        <div class="grid-settings-vw-vq">
+          <div class="card overflow-visible p-0">
+            <div class="window-bar">
+              <div class="window-dot bg-coral/70"></div>
+              <div class="window-dot bg-amber/70"></div>
+              <div class="window-dot bg-emerald/70"></div>
+              <span class="text-xs font-mono text-ink-dim ml-1">Залежності V(W) та V(Q)</span>
+            </div>
+            <div class="relative">
+              <img
+                id="imgGridSettingsVwVq"
+                src="grid_settings_vw_vq.png"
+                alt="Grid Settings VW VQ"
+                class="block max-w-full h-auto"
+                style="border-radius: 0 0 14px 14px"
+              />
+
+              <label class="overlay-checkbox pos-vw-check"
+                ><input type="checkbox" id="vw_en" checked aria-label="Увімкнути V(W)"
+              /></label>
+              <label class="overlay-checkbox pos-vq-check"
+                ><input type="checkbox" id="vq_en" checked aria-label="Увімкнути V(Q)"
+              /></label>
+
+              <div class="overlay-field pos-vw-v1">
+                <input
+                  type="number"
+                  id="vw_v1"
+                  class="overlay-input vw-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-p1">
+                <input
+                  type="number"
+                  id="vw_p1"
+                  class="overlay-input vw-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-v2">
+                <input
+                  type="number"
+                  id="vw_v2"
+                  class="overlay-input vw-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-p2">
+                <input
+                  type="number"
+                  id="vw_p2"
+                  class="overlay-input vw-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-v3">
+                <input
+                  type="number"
+                  id="vw_v3"
+                  class="overlay-input vw-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-p3">
+                <input
+                  type="number"
+                  id="vw_p3"
+                  class="overlay-input vw-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-v4">
+                <input
+                  type="number"
+                  id="vw_v4"
+                  class="overlay-input vw-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vw-p4">
+                <input
+                  type="number"
+                  id="vw_p4"
+                  class="overlay-input vw-input percent-input"
+                  step="0.1"
+                />
+              </div>
+
+              <div class="overlay-field pos-vq-lock-in">
+                <input
+                  type="number"
+                  id="vq_lock_in"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-lock-out">
+                <input
+                  type="number"
+                  id="vq_lock_out"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-v1">
+                <input
+                  type="number"
+                  id="vq_v1"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-q1">
+                <input
+                  type="number"
+                  id="vq_q1"
+                  class="overlay-input vq-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-v2">
+                <input
+                  type="number"
+                  id="vq_v2"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-q2">
+                <input
+                  type="number"
+                  id="vq_q2"
+                  class="overlay-input vq-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-v3">
+                <input
+                  type="number"
+                  id="vq_v3"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-q3">
+                <input
+                  type="number"
+                  id="vq_q3"
+                  class="overlay-input vq-input percent-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-v4">
+                <input
+                  type="number"
+                  id="vq_v4"
+                  class="overlay-input vq-input voltage-input"
+                  step="0.1"
+                />
+              </div>
+              <div class="overlay-field pos-vq-q4">
+                <input
+                  type="number"
+                  id="vq_q4"
+                  class="overlay-input vq-input percent-input"
+                  step="0.1"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card chart-vw" id="chartCardVW">
+          <span class="chart-disabled-badge">V(W) вимкнено</span>
+          <div id="chartVW"></div>
+        </div>
+        <div class="chart-card chart-vq" id="chartCardVQ">
+          <span class="chart-disabled-badge">V(Q) вимкнено</span>
+          <div id="chartVQ"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
