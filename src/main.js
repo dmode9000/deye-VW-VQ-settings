@@ -1,5 +1,6 @@
 import { appState, cloneStateForVnom, dataStateByVnom } from "./modules/state.js";
 import { renderCharts } from "./modules/chart.js";
+import { initAnalytics } from "./modules/analytics.js";
 import {
   applyStateToInputs,
   formatPercentInput,
@@ -19,6 +20,8 @@ import {
   updateLimitInfo,
   validateThresholds,
 } from "./modules/validation.js";
+
+initAnalytics();
 
 function enforceMonotonicVoltages(prefix, values) {
   for (let i = 1; i < values.length; i++) {
