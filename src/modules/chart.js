@@ -20,7 +20,13 @@ export function interpolate(x, voltageArray, valueArray) {
   return 0;
 }
 
-export function generateDensePoints(voltageArray, valueArray, vNom) {
+export function generateDensePoints(
+  voltageArray,
+  valueArray,
+  vNom,
+  inverterNomPower = null,
+  isVW = false,
+) {
   const xSet = new Set(voltageArray);
   const pad = 2;
   const minX = voltageArray[0] - pad;
@@ -37,8 +43,16 @@ export function generateDensePoints(voltageArray, valueArray, vNom) {
 
   sortedX.forEach((x) => {
     denseX.push(x);
-    denseY.push(interpolate(x, voltageArray, valueArray));
-    denseCustom.push(((x * vNom) / 100).toFixed(1));
+    const yVal = interpolate(x, voltageArray, valueArray);
+    denseY.push(yVal);
+
+    if (isVW && inverterNomPower) {
+      const voltageV = ((x * vNom) / 100).toFixed(1);
+      const kwVal = ((yVal * inverterNomPower) / 100).toFixed(2);
+      denseCustom.push([voltageV, kwVal]);
+    } else {
+      denseCustom.push(((x * vNom) / 100).toFixed(1));
+    }
   });
 
   return { x: denseX, y: denseY, custom: denseCustom, minX, maxX };
@@ -54,6 +68,7 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
   if (!chartVWEl || !chartVQEl) return Promise.resolve(false);
 
   const vNom = parseInt(document.getElementById("vNom")?.value, 10);
+  const inverterNomPower = parseFloat(document.getElementById("inverterNomPower")?.value) || 6;
   const limitVoltage = getLimitVoltage();
   const limitPercent = (limitVoltage / vNom) * 100;
   const startVoltage = getStartVoltage();
@@ -62,11 +77,17 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
   const isLimitActive = appState.activeGuide === "limit";
   const isStartActive = appState.activeGuide === "start";
 
-  const denseVW = generateDensePoints(appState.dataState.vw.v, appState.dataState.vw.p, vNom);
+  const denseVW = generateDensePoints(
+    appState.dataState.vw.v,
+    appState.dataState.vw.p,
+    vNom,
+    inverterNomPower,
+    true,
+  );
   const denseVQ = generateDensePoints(appState.dataState.vq.v, appState.dataState.vq.q, vNom);
 
   const maxP = Math.max(100, ...appState.dataState.vw.p);
-  const yVW = [0, maxP + 10];
+  const yVW = [0, Math.min(100, maxP + 10)];
 
   const minQ = Math.min(...appState.dataState.vq.q);
   const maxQ = Math.max(...appState.dataState.vq.q);
@@ -82,32 +103,9 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
     maxX,
     annotations = [],
     shapes = [],
-  ) => ({
-    title: {
-      text: title,
-      font: { size: 15, color: CHART_COLORS.title, family: "Sora, sans-serif", weight: 600 },
-      x: 0.02,
-      xanchor: "left",
-    },
-    paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "#fafbfd",
-    margin: { t: 52, b: 72, l: 58, r: 28 },
-    xaxis: {
-      title: {
-        text: CHART_TEXT.xAxisTitle,
-        font: { color: CHART_COLORS.axisText, size: 11, family: "Fira Mono" },
-      },
-      tickvals: tickValues,
-      ticktext: tickValues.map((p) => `${p}%<br><b>${((p * vNom) / 100).toFixed(1)}V</b>`),
-      gridcolor: CHART_COLORS.grid,
-      gridwidth: 1,
-      zerolinecolor: CHART_COLORS.axisLine,
-      tickfont: { color: CHART_COLORS.axisText, size: 10, family: "Fira Mono" },
-      range: [minX, maxX],
-      linecolor: CHART_COLORS.axisLine,
-      linewidth: 1,
-    },
-    yaxis: {
+    isVW = false,
+  ) => {
+    const yAxisConfig = {
       title: {
         text: yTitle,
         font: { color: CHART_COLORS.axisText, size: 11, family: "Fira Mono" },
@@ -121,17 +119,59 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
       tickfont: { color: CHART_COLORS.axisText, size: 10, family: "Fira Mono" },
       linecolor: CHART_COLORS.axisLine,
       linewidth: 1,
-    },
-    annotations,
-    shapes,
-    hovermode: "closest",
-    autosize: true,
-    hoverlabel: {
-      bgcolor: CHART_COLORS.hoverBg,
-      bordercolor: CHART_COLORS.hoverBorder,
-      font: { color: CHART_COLORS.hoverText, size: 12, family: "Fira Mono" },
-    },
-  });
+    };
+
+    if (isVW) {
+      const tickVals = [];
+      const tickTexts = [];
+      const step = (yRange[1] - yRange[0]) / 5;
+      for (let i = 0; i <= 5; i++) {
+        const val = yRange[0] + step * i;
+        const kwVal = ((val * inverterNomPower) / 100).toFixed(1);
+        tickVals.push(val);
+        tickTexts.push(`${val.toFixed(0)}%<br>&nbsp;&nbsp;${kwVal}kW`);
+      }
+      yAxisConfig.tickvals = tickVals;
+      yAxisConfig.ticktext = tickTexts;
+    }
+
+    return {
+      title: {
+        text: title,
+        font: { size: 15, color: CHART_COLORS.title, family: "Sora, sans-serif", weight: 600 },
+        x: 0.02,
+        xanchor: "left",
+      },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "#fafbfd",
+      margin: { t: 90, b: 72, l: 68, r: 28 },
+      xaxis: {
+        title: {
+          text: CHART_TEXT.xAxisTitle,
+          font: { color: CHART_COLORS.axisText, size: 11, family: "Fira Mono" },
+        },
+        tickvals: tickValues,
+        ticktext: tickValues.map((p) => `${p}%<br><b>${((p * vNom) / 100).toFixed(1)}V</b>`),
+        gridcolor: CHART_COLORS.grid,
+        gridwidth: 1,
+        zerolinecolor: CHART_COLORS.axisLine,
+        tickfont: { color: CHART_COLORS.axisText, size: 10, family: "Fira Mono" },
+        range: [minX, maxX],
+        linecolor: CHART_COLORS.axisLine,
+        linewidth: 1,
+      },
+      yaxis: yAxisConfig,
+      annotations,
+      shapes,
+      hovermode: "closest",
+      autosize: true,
+      hoverlabel: {
+        bgcolor: CHART_COLORS.hoverBg,
+        bordercolor: CHART_COLORS.hoverBorder,
+        font: { color: CHART_COLORS.hoverText, size: 12, family: "Fira Mono" },
+      },
+    };
+  };
 
   const limitLine = {
     type: "line",
@@ -223,7 +263,8 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
     mode: "lines",
     line: { color: CHART_COLORS.lineVW, width: 2.5 },
     customdata: denseVW.custom,
-    hovertemplate: "<b>%{x:.1f}% (%{customdata} В)</b><br>P: %{y:.1f}%<extra></extra>",
+    hovertemplate:
+      "<b>%{x:.1f}% (%{customdata[0]}V)</b><br>P: %{y:.1f}% (%{customdata[1]}kW)<extra></extra>",
     showlegend: false,
     fill: "tozeroy",
     fillcolor: CHART_COLORS.fillVW,
@@ -277,6 +318,7 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
     denseVW.maxX,
     [limitAnnot, startAnnot],
     [limitLine, startLine],
+    true,
   );
 
   const vqLayout = lightLayout(
@@ -288,6 +330,7 @@ function doRenderCharts({ appState, getLimitVoltage, getStartVoltage }) {
     denseVQ.maxX,
     [...vqAnnots, limitAnnot, startAnnot],
     [limitLine, startLine],
+    false,
   );
 
   const vwRender = Plotly.newPlot(chartVWEl, [tVWLine, tVWNodes, tVWZero], vwLayout, cfg);
